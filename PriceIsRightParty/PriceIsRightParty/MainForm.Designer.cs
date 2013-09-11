@@ -28,9 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.background = new System.Windows.Forms.PictureBox();
             this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.newPlayerNameTextBox = new System.Windows.Forms.TextBox();
@@ -45,6 +45,7 @@
             this.playCliffButton = new System.Windows.Forms.Button();
             this.playPiRButton = new System.Windows.Forms.Button();
             this.climberPictureBox = new System.Windows.Forms.PictureBox();
+            this.stopButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.background)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.bacPercentNumericUpDown)).BeginInit();
@@ -71,40 +72,40 @@
             this.chart.BackGradientStyle = System.Windows.Forms.DataVisualization.Charting.GradientStyle.DiagonalLeft;
             this.chart.BackSecondaryColor = System.Drawing.Color.DimGray;
             this.chart.BorderlineColor = System.Drawing.Color.Black;
-            chartArea2.AxisX.LabelStyle.ForeColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisX.LineColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisX.MajorGrid.LineColor = System.Drawing.Color.MidnightBlue;
-            chartArea2.AxisX.MajorTickMark.LineColor = System.Drawing.Color.LightSkyBlue;
-            chartArea2.AxisX.TitleForeColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisX2.LineColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisY.LabelStyle.ForeColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisY.LineColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisY.MajorGrid.LineColor = System.Drawing.Color.MidnightBlue;
-            chartArea2.AxisY2.LineColor = System.Drawing.Color.SteelBlue;
-            chartArea2.AxisY2.TitleForeColor = System.Drawing.Color.SteelBlue;
-            chartArea2.BackColor = System.Drawing.Color.Transparent;
-            chartArea2.BorderColor = System.Drawing.Color.Transparent;
-            chartArea2.BorderWidth = 3;
-            chartArea2.Name = "ChartArea1";
-            this.chart.ChartAreas.Add(chartArea2);
-            legend2.BackColor = System.Drawing.Color.Transparent;
-            legend2.Font = new System.Drawing.Font("Constantia", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            legend2.ForeColor = System.Drawing.Color.SteelBlue;
-            legend2.IsTextAutoFit = false;
-            legend2.Name = "Legend1";
-            this.chart.Legends.Add(legend2);
+            chartArea1.AxisX.LabelStyle.ForeColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisX.LineColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisX.MajorGrid.LineColor = System.Drawing.Color.MidnightBlue;
+            chartArea1.AxisX.MajorTickMark.LineColor = System.Drawing.Color.LightSkyBlue;
+            chartArea1.AxisX.TitleForeColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisX2.LineColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisY.LabelStyle.ForeColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisY.LineColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisY.MajorGrid.LineColor = System.Drawing.Color.MidnightBlue;
+            chartArea1.AxisY2.LineColor = System.Drawing.Color.SteelBlue;
+            chartArea1.AxisY2.TitleForeColor = System.Drawing.Color.SteelBlue;
+            chartArea1.BackColor = System.Drawing.Color.Transparent;
+            chartArea1.BorderColor = System.Drawing.Color.Transparent;
+            chartArea1.BorderWidth = 3;
+            chartArea1.Name = "ChartArea1";
+            this.chart.ChartAreas.Add(chartArea1);
+            legend1.BackColor = System.Drawing.Color.Transparent;
+            legend1.Font = new System.Drawing.Font("Constantia", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            legend1.ForeColor = System.Drawing.Color.SteelBlue;
+            legend1.IsTextAutoFit = false;
+            legend1.Name = "Legend1";
+            this.chart.Legends.Add(legend1);
             this.chart.Location = new System.Drawing.Point(0, 0);
             this.chart.Name = "chart";
-            series2.BorderWidth = 3;
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Legend = "Legend1";
-            series2.MarkerSize = 10;
-            series2.MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
-            series2.Name = "Party Average";
-            series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Time;
-            series2.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
-            this.chart.Series.Add(series2);
+            series1.BorderWidth = 3;
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Legend = "Legend1";
+            series1.MarkerSize = 10;
+            series1.MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
+            series1.Name = "Party Average";
+            series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Time;
+            series1.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
+            this.chart.Series.Add(series1);
             this.chart.Size = new System.Drawing.Size(288, 260);
             this.chart.TabIndex = 1;
             this.chart.Text = "bacChart";
@@ -224,6 +225,7 @@
             this.controlPanel.Controls.Add(this.bacPercentNumericUpDown);
             this.controlPanel.Controls.Add(this.playerSelectComboBox);
             this.controlPanel.Controls.Add(this.playCliffButton);
+            this.controlPanel.Controls.Add(this.stopButton);
             this.controlPanel.Controls.Add(this.playPiRButton);
             this.controlPanel.Controls.Add(this.addDataButton);
             this.controlPanel.Controls.Add(this.addPlayerButton);
@@ -231,7 +233,7 @@
             this.controlPanel.Controls.Add(this.newPlayerNameTextBox);
             this.controlPanel.Location = new System.Drawing.Point(422, 50);
             this.controlPanel.Name = "controlPanel";
-            this.controlPanel.Size = new System.Drawing.Size(443, 223);
+            this.controlPanel.Size = new System.Drawing.Size(443, 235);
             this.controlPanel.TabIndex = 8;
             this.controlPanel.Tag = "controlPanel";
             // 
@@ -274,6 +276,22 @@
             this.climberPictureBox.TabStop = false;
             this.climberPictureBox.Visible = false;
             // 
+            // stopButton
+            // 
+            this.stopButton.BackColor = System.Drawing.Color.White;
+            this.stopButton.FlatAppearance.BorderSize = 0;
+            this.stopButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.stopButton.Font = new System.Drawing.Font("Constantia", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.stopButton.ForeColor = System.Drawing.Color.Red;
+            this.stopButton.Location = new System.Drawing.Point(398, 206);
+            this.stopButton.Name = "stopButton";
+            this.stopButton.Size = new System.Drawing.Size(24, 26);
+            this.stopButton.TabIndex = 6;
+            this.stopButton.Tag = "controlPanel";
+            this.stopButton.Text = "■";
+            this.stopButton.UseVisualStyleBackColor = false;
+            this.stopButton.Click += new System.EventHandler(this.stopButton_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -315,6 +333,7 @@
         private System.Windows.Forms.PictureBox climberPictureBox;
         private System.Windows.Forms.Button playCliffButton;
         private System.Windows.Forms.Button playPiRButton;
+        private System.Windows.Forms.Button stopButton;
     }
 }
 

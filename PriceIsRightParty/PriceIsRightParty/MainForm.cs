@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Media;
+using System.IO;
 
 namespace PriceIsRightParty
 {
@@ -76,7 +77,8 @@ namespace PriceIsRightParty
             this.climberPictureBox.Width = this.climberPictureBox.Image.Width;
             this.climberPictureBox.Height = this.climberPictureBox.Image.Height;
             this.climberPictureBox.Parent = this.background;
-            this.climberPictureBox.Location = new Point((int)(climberVirtualMinX * ((double)this.Width)), (int)(climberVirtualMinY * ((double)this.Height)));
+            setClimberState(0, 0.0, Properties.Settings.Default.BACTarget);
+            //this.climberPictureBox.Location = new Point((int)(climberVirtualMinX * ((double)this.Width)), (int)(climberVirtualMinY * ((double)this.Height)));
 
             chart.Width = this.Width;
             chart.Height = this.Height;
@@ -106,7 +108,7 @@ namespace PriceIsRightParty
             this.Click += new EventHandler(MainForm_Click);
             this.newPlayerNameTextBox.KeyDown += new KeyEventHandler(newPlayerNameTextBox_KeyDown);
             this.bacPercentNumericUpDown.KeyDown += new KeyEventHandler(bacPercentNumericUpDown_KeyDown);
-
+            
             #endregion
 
             //Show The Application
@@ -138,9 +140,10 @@ namespace PriceIsRightParty
             double vmin = climberVirtualMinX;
             double vmax = climberVirtualMaxX;
             double denormalizedVal = (normalizedVal * (vmax - vmin)) + vmin;
-            double range = max - min;
             double py = (climberM * denormalizedVal + climberB) * this.Height;
             double px = denormalizedVal * this.Width;
+            py = (py / (1920 / 1080)) * (this.Width / this.Height);
+            px = (px / (1920 / 1080)) * (this.Width / this.Height);
             climberPictureBox.Location = new Point((int)px, (int)py);
         }
 
@@ -215,32 +218,43 @@ namespace PriceIsRightParty
         void bacPercentNumericUpDown_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
+            {
                 addDataButton_Click(sender, e);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
         }
 
         void newPlayerNameTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
+            {
                 addPlayerButton_Click(sender, e);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
         }
 
         private void addPlayerButton_Click(object sender, EventArgs e)
         {
-            if (newPlayerNameTextBox.Text.Trim() != "")
+            string playerName = newPlayerNameTextBox.Text.Trim();
+            DateTime time = DateTime.Now;
+            if (playerName != "")
             {
                 bool exists = false;
                 for (int i = 0; i < playerSelectComboBox.Items.Count; i++)
-                    if (((string)playerSelectComboBox.Items[i]) == newPlayerNameTextBox.Text.Trim())
+                    if (((string)playerSelectComboBox.Items[i]) == playerName)
                         exists = true;
                 if (!exists)
                 {
-                    playerSelectComboBox.Items.Add(newPlayerNameTextBox.Text.Trim());
-                    chart.Series.Add(newPlayerNameTextBox.Text.Trim());
+                    playerSelectComboBox.Items.Add(playerName);
+                    chart.Series.Add(playerName);
                     chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
                     chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
                     chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
                     chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Time;
-                    chart.Series[chart.Series.Count - 1].Points.AddXY(DateTime.Now, 0.0);
+                    chart.Series[chart.Series.Count - 1].Points.AddXY(time, 0.0);
+                    savePoint(playerName, time, 0.0);
                     if (playerSelectComboBox.Items.Count == 1)
                     {
                         playerSelectComboBox.SelectedIndex = 0;
@@ -253,7 +267,13 @@ namespace PriceIsRightParty
         {
             if (playerSelectComboBox.Items.Count > 0)
             {
-                chart.Series[playerSelectComboBox.SelectedIndex + 1].Points.AddXY(DateTime.Now, bacPercentNumericUpDown.Value);
+                int selected = playerSelectComboBox.SelectedIndex;
+                string playerName = (string)playerSelectComboBox.Items[selected];
+                DateTime time = DateTime.Now;
+                double val = (double)bacPercentNumericUpDown.Value;
+
+                chart.Series[selected + 1].Points.AddXY(time, val);
+                savePoint(playerName, time, val);
                 recalculateAverage();
             }
         }
@@ -275,6 +295,11 @@ namespace PriceIsRightParty
                     CliffState = 0;
                     break;
             }
+        }
+
+        private void stopButton_Click(object sender, EventArgs e)
+        {
+            wmp.Stop();
         }
 
         private void playPiRButton_Click(object sender, EventArgs e)
@@ -351,6 +376,17 @@ namespace PriceIsRightParty
                     wmp.Play();
                     break;
             }
+        }
+
+        #endregion
+
+        #region Save Function
+
+        private void savePoint(string playerName, DateTime t, double x)
+        {
+            StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
+            w.Write(playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + '\t' + x.ToString() + "\r\n");
+            w.Close();
         }
 
         #endregion

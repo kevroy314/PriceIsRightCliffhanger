@@ -8,5 +8,8 @@
     <Setting Name="BACTarget" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0.08</Value>
     </Setting>
+    <Setting Name="LogFilename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">log.txt</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
