@@ -68,21 +68,61 @@ namespace PriceIsRightParty
 
             #endregion
 
+            #region Restore Last Log
+
+            StreamReader reader = new StreamReader(Properties.Settings.Default.LogFilename);
+            string oldLog = reader.ReadToEnd();
+            string[] logItems = oldLog.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < logItems.Length; i++)
+            {
+                string[] itemSplit = logItems[i].Split(new char[] { '\t' });
+                string name = itemSplit[0];
+                DateTime dt = DateTime.Parse(itemSplit[1]);
+                double val = double.Parse(itemSplit[2]);
+                int found = -1;
+
+                for (int j = 0; j < chart.Series.Count; j++)
+                    if (chart.Series[j].Name == name)
+                        found = j;
+                if (found == -1)
+                {
+                    playerSelectComboBox.Items.Add(name);
+                    newPlayerNameTextBox.Text = "";
+                    chart.Series.Add(name);
+                    chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+                    chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
+                    chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
+                    chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
+                    chart.Series[chart.Series.Count - 1].Points.AddXY(dt, val);
+                }
+                else
+                {
+                    chart.Series[found].Points.AddXY(dt, val);
+                    recalculateAverage(dt);
+                }
+            }
+
+            #endregion
+
             #region Dynamic Sizing and Locating
 
             this.background.Width = this.Width;
             this.background.Height = this.Height;
             this.background.Image = Properties.Resources.CliffhangerBackground;
-
-            this.climberPictureBox.Width = this.climberPictureBox.Image.Width;
-            this.climberPictureBox.Height = this.climberPictureBox.Image.Height;
-            this.climberPictureBox.Parent = this.background;
+            try
+            {
+                this.climberPictureBox.Image = Properties.Resources.Climber;
+                this.climberPictureBox.Width = this.climberPictureBox.Image.Width;
+                this.climberPictureBox.Height = this.climberPictureBox.Image.Height;
+                this.climberPictureBox.Parent = this.background;
+            }
+            catch (Exception) { }
             setClimberState(0, 0.0, Properties.Settings.Default.BACTarget);
             //this.climberPictureBox.Location = new Point((int)(climberVirtualMinX * ((double)this.Width)), (int)(climberVirtualMinY * ((double)this.Height)));
 
             chart.Width = this.Width;
             chart.Height = this.Height;
-
+            chart.ChartAreas[0].AxisX.LabelStyle.Format = "MM/dd/yy hh:mm:ss";
             controlPanel.Location = new Point(this.Width / 2 - controlPanel.Width / 2, this.Height / 2 - controlPanel.Height / 2);
 
             #endregion
@@ -147,13 +187,13 @@ namespace PriceIsRightParty
             climberPictureBox.Location = new Point((int)px, (int)py);
         }
 
-        private void recalculateAverage()
+        private void recalculateAverage(DateTime dt)
         {
             double sum = 0.0;
             for (int i = 1; i < chart.Series.Count; i++)
                 sum += chart.Series[i].Points[chart.Series[i].Points.Count - 1].YValues[0];
             double newAverage = sum / (chart.Series.Count - 1);
-            chart.Series[0].Points.AddXY(DateTime.Now, newAverage);
+            chart.Series[0].Points.AddXY(dt, newAverage);
             setClimberState(newAverage, 0, Properties.Settings.Default.BACTarget);
             if (newAverage > Properties.Settings.Default.BACTarget)
             {
@@ -248,11 +288,12 @@ namespace PriceIsRightParty
                 if (!exists)
                 {
                     playerSelectComboBox.Items.Add(playerName);
+                    newPlayerNameTextBox.Text = "";
                     chart.Series.Add(playerName);
                     chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
                     chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
                     chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
-                    chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Time;
+                    chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
                     chart.Series[chart.Series.Count - 1].Points.AddXY(time, 0.0);
                     savePoint(playerName, time, 0.0);
                     if (playerSelectComboBox.Items.Count == 1)
@@ -271,10 +312,10 @@ namespace PriceIsRightParty
                 string playerName = (string)playerSelectComboBox.Items[selected];
                 DateTime time = DateTime.Now;
                 double val = (double)bacPercentNumericUpDown.Value;
-
+                bacPercentNumericUpDown.Value = 0;
                 chart.Series[selected + 1].Points.AddXY(time, val);
                 savePoint(playerName, time, val);
-                recalculateAverage();
+                recalculateAverage(time);
             }
         }
 
@@ -333,49 +374,53 @@ namespace PriceIsRightParty
 
         private void playSound(Sounds s)
         {
-            string path;
-            switch (s)
+            try
             {
-                case Sounds.crash:
-                    player.Stream = Properties.Resources.crash;
-                    player.Play();
-                    break;
-                case Sounds.PiR:
-                    path = musicAbsolutePath + Properties.Resources.PiRFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.PiRBeat:
-                    path = musicAbsolutePath + Properties.Resources.PiRBeatFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.PiRGroove:
-                    path = musicAbsolutePath + Properties.Resources.PiRGrooveFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.PiRModern:
-                    path = musicAbsolutePath + Properties.Resources.PiRModernFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.Cliff:
-                    path = musicAbsolutePath + Properties.Resources.CliffFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.CliffBass:
-                    path = musicAbsolutePath + Properties.Resources.CliffBassFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
-                case Sounds.CliffEuro:
-                    path = musicAbsolutePath + Properties.Resources.CliffEuroFilename;
-                    wmp.Open(new Uri(path));
-                    wmp.Play();
-                    break;
+                string path;
+                switch (s)
+                {
+                    case Sounds.crash:
+                        player.Stream = Properties.Resources.crash;
+                        player.Play();
+                        break;
+                    case Sounds.PiR:
+                        path = musicAbsolutePath + Properties.Resources.PiRFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.PiRBeat:
+                        path = musicAbsolutePath + Properties.Resources.PiRBeatFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.PiRGroove:
+                        path = musicAbsolutePath + Properties.Resources.PiRGrooveFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.PiRModern:
+                        path = musicAbsolutePath + Properties.Resources.PiRModernFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.Cliff:
+                        path = musicAbsolutePath + Properties.Resources.CliffFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.CliffBass:
+                        path = musicAbsolutePath + Properties.Resources.CliffBassFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                    case Sounds.CliffEuro:
+                        path = musicAbsolutePath + Properties.Resources.CliffEuroFilename;
+                        wmp.Open(new Uri(path));
+                        wmp.Play();
+                        break;
+                }
             }
+            catch (Exception) { }
         }
 
         #endregion
