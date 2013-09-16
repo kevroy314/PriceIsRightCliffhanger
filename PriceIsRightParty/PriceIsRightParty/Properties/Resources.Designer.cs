@@ -115,7 +115,7 @@ namespace PriceIsRightParty.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to \Music\.
+        ///   Looks up a localized string similar to \Resources\Music\.
         /// </summary>
         internal static string MusicPath {
             get {

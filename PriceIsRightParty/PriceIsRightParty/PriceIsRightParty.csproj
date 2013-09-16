@@ -89,15 +89,28 @@
     <EmbeddedResource Include="Resources\background.jpg" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\PiRModernRemix.wav" />
-    <None Include="Resources\PiRGrooveRemix.wav" />
-    <None Include="Resources\PiRBeatRemix.wav" />
-    <None Include="Resources\PiR.wav" />
-    <None Include="Resources\CliffhangerRemixEuro.wav" />
-    <None Include="Resources\CliffhangerRemixBass.wav" />
-    <None Include="Resources\Cliffhanger.wav" />
+    <Content Include="Resources\Music\PiRBeatRemix.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Music\PiRGrooveRemix.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Music\PiRModernRemix.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Music\Cliffhanger.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Music\CliffhangerRemixBass.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Music\CliffhangerRemixEuro.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\Climber.png" />
-    <None Include="Resources\PiR.mp3" />
+    <None Include="Resources\Music\PiR.mp3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\crash.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

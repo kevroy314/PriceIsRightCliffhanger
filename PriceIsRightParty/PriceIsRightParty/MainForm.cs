@@ -25,6 +25,7 @@ namespace PriceIsRightParty
         private int screenState;
         private int PiRState;
         private int CliffState;
+        private bool hasGroupLost;
 
         private string musicAbsolutePath;
 
@@ -70,36 +71,44 @@ namespace PriceIsRightParty
 
             #region Restore Last Log
 
-            StreamReader reader = new StreamReader(Properties.Settings.Default.LogFilename);
-            string oldLog = reader.ReadToEnd();
-            string[] logItems = oldLog.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-            for (int i = 0; i < logItems.Length; i++)
+            if (File.Exists(Properties.Settings.Default.LogFilename) && Properties.Settings.Default.LoadPreviousLogFile)
             {
-                string[] itemSplit = logItems[i].Split(new char[] { '\t' });
-                string name = itemSplit[0];
-                DateTime dt = DateTime.Parse(itemSplit[1]);
-                double val = double.Parse(itemSplit[2]);
-                int found = -1;
+                StreamReader reader = new StreamReader(Properties.Settings.Default.LogFilename);
+                string oldLog = reader.ReadToEnd();
+                string[] logItems = oldLog.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < logItems.Length; i++)
+                {
+                    string[] itemSplit = logItems[i].Split(new char[] { '\t' });
+                    string name = itemSplit[0];
+                    DateTime dt = DateTime.Parse(itemSplit[1]);
+                    double val = 0;
+                    try
+                    {
+                        val = double.Parse(itemSplit[2]);
+                    }
+                    catch (Exception) { }
+                    bool removed = itemSplit[2] == "Removed";
+                    int found = -1;
 
-                for (int j = 0; j < chart.Series.Count; j++)
-                    if (chart.Series[j].Name == name)
-                        found = j;
-                if (found == -1)
-                {
-                    playerSelectComboBox.Items.Add(name);
-                    newPlayerNameTextBox.Text = "";
-                    chart.Series.Add(name);
-                    chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-                    chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
-                    chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
-                    chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
-                    chart.Series[chart.Series.Count - 1].Points.AddXY(dt, val);
+                    for (int j = 0; j < chart.Series.Count; j++)
+                        if (chart.Series[j].Name == name)
+                            found = j;
+                    if (found == -1)
+                        addNewPlayer(name, dt, val, false);
+                    else
+                    {
+                        if (removed)
+                            removePlayer(name, dt, false);
+                        else
+                            addDataToPlayer(name, dt, val, false);
+                    }
                 }
-                else
-                {
-                    chart.Series[found].Points.AddXY(dt, val);
-                    recalculateAverage(dt);
-                }
+                playerSelectComboBox.SelectedIndex = 0;
+                reader.Close();
+            }
+            else
+            {
+                File.Open(Properties.Settings.Default.LogFilename,FileMode.Create).Close();
             }
 
             #endregion
@@ -109,20 +118,15 @@ namespace PriceIsRightParty
             this.background.Width = this.Width;
             this.background.Height = this.Height;
             this.background.Image = Properties.Resources.CliffhangerBackground;
-            try
-            {
-                this.climberPictureBox.Image = Properties.Resources.Climber;
-                this.climberPictureBox.Width = this.climberPictureBox.Image.Width;
-                this.climberPictureBox.Height = this.climberPictureBox.Image.Height;
-                this.climberPictureBox.Parent = this.background;
-            }
-            catch (Exception) { }
+            this.climberPictureBox.Image = Properties.Resources.Climber;
+            this.climberPictureBox.Width = this.climberPictureBox.Image.Width;
+            this.climberPictureBox.Height = this.climberPictureBox.Image.Height;
+            this.climberPictureBox.Parent = this.background;
             setClimberState(0, 0.0, Properties.Settings.Default.BACTarget);
-            //this.climberPictureBox.Location = new Point((int)(climberVirtualMinX * ((double)this.Width)), (int)(climberVirtualMinY * ((double)this.Height)));
 
             chart.Width = this.Width;
             chart.Height = this.Height;
-            chart.ChartAreas[0].AxisX.LabelStyle.Format = "MM/dd/yy hh:mm:ss";
+            chart.ChartAreas[0].AxisX.LabelStyle.Format = "MM/dd/yy HH:mm:ss";
             controlPanel.Location = new Point(this.Width / 2 - controlPanel.Width / 2, this.Height / 2 - controlPanel.Height / 2);
 
             #endregion
@@ -132,6 +136,7 @@ namespace PriceIsRightParty
             screenState = 0;
             PiRState = 0;
             CliffState = 0;
+            hasGroupLost = false;
 
             #endregion
 
@@ -148,6 +153,7 @@ namespace PriceIsRightParty
             this.Click += new EventHandler(MainForm_Click);
             this.newPlayerNameTextBox.KeyDown += new KeyEventHandler(newPlayerNameTextBox_KeyDown);
             this.bacPercentNumericUpDown.KeyDown += new KeyEventHandler(bacPercentNumericUpDown_KeyDown);
+            this.initialBACNumericUpDown.KeyDown += new KeyEventHandler(initialBACNumericUpDown_KeyDown);
             
             #endregion
 
@@ -174,6 +180,31 @@ namespace PriceIsRightParty
 
         #region State Helper Functions
 
+        private void addNewPlayer(string name, DateTime currentTime, double initialBAC, bool save)
+        {
+            playerSelectComboBox.Items.Add(name);
+            newPlayerNameTextBox.Text = "";
+            initialBACNumericUpDown.Value = 0;
+            if (chart.Series.IndexOf(name) < 0)
+            {
+                chart.Series.Add(name);
+                chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+                chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
+                chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
+                chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
+            }
+            addDataToPlayer(name, currentTime, initialBAC, save);
+        }
+
+        private void addDataToPlayer(string name, DateTime currentTime, double BAC, bool save)
+        {
+            int playerIndex = chart.Series.IndexOf(name);
+            chart.Series[playerIndex].Points.AddXY(currentTime, BAC);
+            recalculateAverage(currentTime);
+            if(save)
+                savePoint(name, currentTime, BAC);
+        }
+
         private void setClimberState(double x, double min, double max)
         {
             double normalizedVal = (x - min) / (max - min);
@@ -190,18 +221,34 @@ namespace PriceIsRightParty
         private void recalculateAverage(DateTime dt)
         {
             double sum = 0.0;
-            for (int i = 1; i < chart.Series.Count; i++)
-                sum += chart.Series[i].Points[chart.Series[i].Points.Count - 1].YValues[0];
-            double newAverage = sum / (chart.Series.Count - 1);
+            for (int i = 0; i < playerSelectComboBox.Items.Count; i++)
+            {
+                string playerName = (string)playerSelectComboBox.Items[i];
+                int seriesIndex = chart.Series.IndexOf(playerName);
+                sum += chart.Series[seriesIndex].Points[chart.Series[seriesIndex].Points.Count - 1].YValues[0];
+            }
+            double newAverage = sum / (playerSelectComboBox.Items.Count);
             chart.Series[0].Points.AddXY(dt, newAverage);
             setClimberState(newAverage, 0, Properties.Settings.Default.BACTarget);
-            if (newAverage > Properties.Settings.Default.BACTarget)
+            if (newAverage > Properties.Settings.Default.BACTarget && !hasGroupLost)
             {
+                hasGroupLost = true;
                 playSound(Sounds.crash);
                 advanceScreenState();
                 advanceScreenState();
                 climberPictureBox.Image = null;
             }
+        }
+
+        private void removePlayer(string name, DateTime time,bool save)
+        {
+            int playerIndex = chart.Series.IndexOf(name);
+            double lastPoint = chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count-1].YValues[0];
+            addDataToPlayer(name,time,lastPoint,false);
+            chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count-1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Cross;
+            chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count - 1].MarkerSize = chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count - 1].MarkerSize * 2;
+            if(save)
+                savePlayerRemoval(name, time);
         }
 
         #endregion
@@ -275,11 +322,21 @@ namespace PriceIsRightParty
             }
         }
 
+        void initialBACNumericUpDown_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                addPlayerButton_Click(sender, e);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+
         private void addPlayerButton_Click(object sender, EventArgs e)
         {
             string playerName = newPlayerNameTextBox.Text.Trim();
             DateTime time = DateTime.Now;
-            if (playerName != "")
+            if (playerName != "" && playerName!="Party Average")
             {
                 bool exists = false;
                 for (int i = 0; i < playerSelectComboBox.Items.Count; i++)
@@ -287,21 +344,24 @@ namespace PriceIsRightParty
                         exists = true;
                 if (!exists)
                 {
-                    playerSelectComboBox.Items.Add(playerName);
-                    newPlayerNameTextBox.Text = "";
-                    chart.Series.Add(playerName);
-                    chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-                    chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
-                    chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
-                    chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
-                    chart.Series[chart.Series.Count - 1].Points.AddXY(time, 0.0);
-                    savePoint(playerName, time, 0.0);
+                    addNewPlayer(playerName, time, (double)initialBACNumericUpDown.Value,true);
                     if (playerSelectComboBox.Items.Count == 1)
-                    {
                         playerSelectComboBox.SelectedIndex = 0;
-                    }
                 }
             }
+        }
+
+        private void removePlayerButton_Click(object sender, EventArgs e)
+        {
+            DateTime dt = DateTime.Now;
+            string playerName = (string)playerSelectComboBox.SelectedItem;
+            playerSelectComboBox.Items.RemoveAt(playerSelectComboBox.SelectedIndex);
+            if (playerSelectComboBox.Items.Count > 0)
+            {
+                playerSelectComboBox.SelectedIndex = 0;
+                recalculateAverage(dt);
+            }
+            removePlayer(playerName, dt,true);
         }
 
         private void addDataButton_Click(object sender, EventArgs e)
@@ -313,9 +373,7 @@ namespace PriceIsRightParty
                 DateTime time = DateTime.Now;
                 double val = (double)bacPercentNumericUpDown.Value;
                 bacPercentNumericUpDown.Value = 0;
-                chart.Series[selected + 1].Points.AddXY(time, val);
-                savePoint(playerName, time, val);
-                recalculateAverage(time);
+                addDataToPlayer(playerName, time, val,true);
             }
         }
 
@@ -431,6 +489,13 @@ namespace PriceIsRightParty
         {
             StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
             w.Write(playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + '\t' + x.ToString() + "\r\n");
+            w.Close();
+        }
+
+        private void savePlayerRemoval(string playerName, DateTime t)
+        {
+            StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
+            w.Write(playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + "\tRemoved\r\n");
             w.Close();
         }
 
