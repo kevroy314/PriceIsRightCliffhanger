@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using System.Media;
 using System.IO;
+using SnapShot;
+using System.Runtime.InteropServices;
 
 namespace PriceIsRightParty
 {
@@ -31,6 +33,7 @@ namespace PriceIsRightParty
 
         private SoundPlayer player;
         private MediaPlayer wmp;
+        private Capture cam;
 
         #endregion
 
@@ -155,6 +158,17 @@ namespace PriceIsRightParty
             this.bacPercentNumericUpDown.KeyDown += new KeyEventHandler(bacPercentNumericUpDown_KeyDown);
             this.initialBACNumericUpDown.KeyDown += new KeyEventHandler(initialBACNumericUpDown_KeyDown);
             
+            #endregion
+
+            #region Image Capture Initialization
+
+            const int VIDEODEVICE = 0; // zero based index of video capture device to use
+            const int VIDEOWIDTH = 640; // Depends on video device caps
+            const int VIDEOHEIGHT = 480; // Depends on video device caps
+            const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
+
+            cam = new Capture(VIDEODEVICE, VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, acquisitionWindow);
+
             #endregion
 
             //Show The Application
@@ -500,5 +514,23 @@ namespace PriceIsRightParty
         }
 
         #endregion
+
+        private void captureButton_Click(object sender, EventArgs e)
+        {
+            IntPtr m_ip = IntPtr.Zero;
+            Cursor.Current = Cursors.WaitCursor;
+            if (m_ip != IntPtr.Zero)
+            {
+                Marshal.FreeCoTaskMem(m_ip);
+                m_ip = IntPtr.Zero;
+            }
+            m_ip = cam.Click();
+
+            Bitmap b = new Bitmap(cam.Width, cam.Height, cam.Stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, m_ip);
+
+            cam.Dispose();
+
+            acquisitionWindow.Image = b;
+        }
     }
 }
