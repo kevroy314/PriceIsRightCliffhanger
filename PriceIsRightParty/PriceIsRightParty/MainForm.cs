@@ -167,7 +167,11 @@ namespace PriceIsRightParty
             const int VIDEOHEIGHT = 480; // Depends on video device caps
             const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
 
-            cam = new Capture(VIDEODEVICE, VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, acquisitionWindow);
+            try
+            {
+                cam = new Capture(VIDEODEVICE, VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, acquisitionWindow);
+            }
+            catch (Exception) { }
 
             #endregion
 
@@ -196,7 +200,7 @@ namespace PriceIsRightParty
 
         private void addNewPlayer(string name, DateTime currentTime, double initialBAC, bool save)
         {
-            playerSelectComboBox.Items.Add(name);
+            playerSelectComboBox.Items.Add(new Player(name));
             newPlayerNameTextBox.Text = "";
             initialBACNumericUpDown.Value = 0;
             if (chart.Series.IndexOf(name) < 0)
@@ -237,8 +241,8 @@ namespace PriceIsRightParty
             double sum = 0.0;
             for (int i = 0; i < playerSelectComboBox.Items.Count; i++)
             {
-                string playerName = (string)playerSelectComboBox.Items[i];
-                int seriesIndex = chart.Series.IndexOf(playerName);
+                Player player = (Player)playerSelectComboBox.Items[i];
+                int seriesIndex = chart.Series.IndexOf(player.Name);
                 sum += chart.Series[seriesIndex].Points[chart.Series[seriesIndex].Points.Count - 1].YValues[0];
             }
             double newAverage = sum / (playerSelectComboBox.Items.Count);
@@ -354,7 +358,7 @@ namespace PriceIsRightParty
             {
                 bool exists = false;
                 for (int i = 0; i < playerSelectComboBox.Items.Count; i++)
-                    if (((string)playerSelectComboBox.Items[i]) == playerName)
+                    if (((Player)playerSelectComboBox.Items[i]).Name == playerName)
                         exists = true;
                 if (!exists)
                 {
@@ -368,7 +372,7 @@ namespace PriceIsRightParty
         private void removePlayerButton_Click(object sender, EventArgs e)
         {
             DateTime dt = DateTime.Now;
-            string playerName = (string)playerSelectComboBox.SelectedItem;
+            string playerName = ((Player)playerSelectComboBox.SelectedItem).Name;
             playerSelectComboBox.Items.RemoveAt(playerSelectComboBox.SelectedIndex);
             if (playerSelectComboBox.Items.Count > 0)
             {
@@ -383,7 +387,7 @@ namespace PriceIsRightParty
             if (playerSelectComboBox.Items.Count > 0)
             {
                 int selected = playerSelectComboBox.SelectedIndex;
-                string playerName = (string)playerSelectComboBox.Items[selected];
+                string playerName = ((Player)playerSelectComboBox.Items[selected]).Name;
                 DateTime time = DateTime.Now;
                 double val = (double)bacPercentNumericUpDown.Value;
                 bacPercentNumericUpDown.Value = 0;
@@ -517,20 +521,24 @@ namespace PriceIsRightParty
 
         private void captureButton_Click(object sender, EventArgs e)
         {
-            IntPtr m_ip = IntPtr.Zero;
-            Cursor.Current = Cursors.WaitCursor;
-            if (m_ip != IntPtr.Zero)
+            if (cam != null)
             {
-                Marshal.FreeCoTaskMem(m_ip);
-                m_ip = IntPtr.Zero;
+                IntPtr m_ip = IntPtr.Zero;
+                Cursor.Current = Cursors.WaitCursor;
+                if (m_ip != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(m_ip);
+                    m_ip = IntPtr.Zero;
+                }
+
+                m_ip = cam.Click();
+
+                Bitmap b = new Bitmap(cam.Width, cam.Height, cam.Stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, m_ip);
+
+                cam.Dispose();
+
+                acquisitionWindow.Image = b;
             }
-            m_ip = cam.Click();
-
-            Bitmap b = new Bitmap(cam.Width, cam.Height, cam.Stride, System.Drawing.Imaging.PixelFormat.Format24bppRgb, m_ip);
-
-            cam.Dispose();
-
-            acquisitionWindow.Image = b;
         }
     }
 }
