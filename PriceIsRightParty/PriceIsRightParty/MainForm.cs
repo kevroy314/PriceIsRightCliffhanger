@@ -35,6 +35,11 @@ namespace PriceIsRightParty
         private MediaPlayer wmp;
         private Capture cam;
 
+        const int VIDEODEVICE = 0; // zero based index of video capture device to use
+        const int VIDEOWIDTH = 640; // Depends on video device caps
+        const int VIDEOHEIGHT = 480; // Depends on video device caps
+        const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
+
         #endregion
 
         public MainForm()
@@ -85,6 +90,7 @@ namespace PriceIsRightParty
                     string name = itemSplit[0];
                     DateTime dt = DateTime.Parse(itemSplit[1]);
                     double val = 0;
+                    Player p = new Player(name);
                     try
                     {
                         val = double.Parse(itemSplit[2]);
@@ -97,7 +103,10 @@ namespace PriceIsRightParty
                         if (chart.Series[j].Name == name)
                             found = j;
                     if (found == -1)
-                        addNewPlayer(name, dt, val, false);
+                    {
+                        p.InitBAC = val;
+                        addNewPlayer(p, dt, false);
+                    }
                     else
                     {
                         if (removed)
@@ -162,16 +171,7 @@ namespace PriceIsRightParty
 
             #region Image Capture Initialization
 
-            const int VIDEODEVICE = 0; // zero based index of video capture device to use
-            const int VIDEOWIDTH = 640; // Depends on video device caps
-            const int VIDEOHEIGHT = 480; // Depends on video device caps
-            const int VIDEOBITSPERPIXEL = 24; // BitsPerPixel values determined by device
-
-            try
-            {
-                cam = new Capture(VIDEODEVICE, VIDEOWIDTH, VIDEOHEIGHT, VIDEOBITSPERPIXEL, acquisitionWindow);
-            }
-            catch (Exception) { }
+            reactivateCamera();
 
             #endregion
 
@@ -198,20 +198,20 @@ namespace PriceIsRightParty
 
         #region State Helper Functions
 
-        private void addNewPlayer(string name, DateTime currentTime, double initialBAC, bool save)
+        private void addNewPlayer(Player p, DateTime currentTime, bool save)
         {
-            playerSelectComboBox.Items.Add(new Player(name));
+            playerSelectComboBox.Items.Add(p);
             newPlayerNameTextBox.Text = "";
             initialBACNumericUpDown.Value = 0;
-            if (chart.Series.IndexOf(name) < 0)
+            if (chart.Series.IndexOf(p.Name) < 0)
             {
-                chart.Series.Add(name);
+                chart.Series.Add(p.Name);
                 chart.Series[chart.Series.Count - 1].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
                 chart.Series[chart.Series.Count - 1].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
                 chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
                 chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
             }
-            addDataToPlayer(name, currentTime, initialBAC, save);
+            addDataToPlayer(p.Name, currentTime, p.InitBAC, save);
         }
 
         private void addDataToPlayer(string name, DateTime currentTime, double BAC, bool save)
@@ -219,8 +219,19 @@ namespace PriceIsRightParty
             int playerIndex = chart.Series.IndexOf(name);
             chart.Series[playerIndex].Points.AddXY(currentTime, BAC);
             recalculateAverage(currentTime);
-            if(save)
+            if (save)
+            {
                 savePoint(name, currentTime, BAC);
+                if (chart.Series[0].Points[chart.Series[0].Points.Count - 1].YValues[0] > Properties.Settings.Default.BACTarget && !hasGroupLost)
+                {
+                    hasGroupLost = true;
+                    playSound(Sounds.crash);
+                    advanceScreenState();
+                    advanceScreenState();
+                    climberPictureBox.Image = null;
+                }
+                reactivateCamera();
+            }
         }
 
         private void setClimberState(double x, double min, double max)
@@ -248,14 +259,6 @@ namespace PriceIsRightParty
             double newAverage = sum / (playerSelectComboBox.Items.Count);
             chart.Series[0].Points.AddXY(dt, newAverage);
             setClimberState(newAverage, 0, Properties.Settings.Default.BACTarget);
-            if (newAverage > Properties.Settings.Default.BACTarget && !hasGroupLost)
-            {
-                hasGroupLost = true;
-                playSound(Sounds.crash);
-                advanceScreenState();
-                advanceScreenState();
-                climberPictureBox.Image = null;
-            }
         }
 
         private void removePlayer(string name, DateTime time,bool save)
@@ -362,7 +365,14 @@ namespace PriceIsRightParty
                         exists = true;
                 if (!exists)
                 {
-                    addNewPlayer(playerName, time, (double)initialBACNumericUpDown.Value,true);
+                    Player p = new Player(playerName);
+                    p.InitBAC = (double)initialBACNumericUpDown.Value;
+                    p.Height = (double)heightNumeric.Value;
+                    p.Weight = (double)weightNumeric.Value;
+                    p.HoursSinceEaten = (double)lastEatenNumeric.Value;
+                    p.Image = captureImage();
+                    p.BAC = p.InitBAC;
+                    addNewPlayer(p,time,true);
                     if (playerSelectComboBox.Items.Count == 1)
                         playerSelectComboBox.SelectedIndex = 0;
                 }
@@ -519,7 +529,7 @@ namespace PriceIsRightParty
 
         #endregion
 
-        private void captureButton_Click(object sender, EventArgs e)
+        private Bitmap captureImage()
         {
             if (cam != null)
             {
@@ -537,8 +547,22 @@ namespace PriceIsRightParty
 
                 cam.Dispose();
 
-                acquisitionWindow.Image = b;
+                return b;
             }
+            return null;
+        }
+
+        private void reactivateCamera()
+        {
+            try
+            {
+                cam = new Capture(Properties.Settings.Default.CameraNumber, 
+                                  Properties.Settings.Default.CameraWidth, 
+                                  Properties.Settings.Default.CameraHeight, 
+                                  Properties.Settings.Default.CameraBitsPerPixel, 
+                                  acquisitionWindow);
+            }
+            catch (Exception) { }
         }
     }
 }
