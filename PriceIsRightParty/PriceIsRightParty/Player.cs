@@ -57,6 +57,13 @@ namespace PriceIsRightParty
             get { return m_hoursSinceEaten; }
             set { m_hoursSinceEaten = value; }
         }
+        private DateTime m_playerAddedTime;
+
+        public DateTime PlayerAddedTime
+        {
+            get { return m_playerAddedTime; }
+            set { m_playerAddedTime = value; }
+        }
 
         public Player(string name)
         {
@@ -66,6 +73,41 @@ namespace PriceIsRightParty
         public override string ToString()
         {
             return m_name;
+        }
+
+        public string toSaveString(bool saveImage)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(m_name);
+            builder.Append("\t");
+            builder.Append(m_initBAC);
+            builder.Append("\t");
+            builder.Append(m_height);
+            builder.Append("\t");
+            builder.Append(m_weight);
+            builder.Append("\t");
+            builder.Append(m_hoursSinceEaten);
+            builder.Append("\t");
+            builder.Append(m_playerAddedTime.ToLongDateString() + " " + m_playerAddedTime.ToLongTimeString());
+            builder.Append("\t");
+            builder.Append(m_name + ".bmp");
+            builder.Append("\t");
+            if(saveImage)
+                m_image.Save(m_name + ".bmp", System.Drawing.Imaging.ImageFormat.Bmp);
+            return builder.ToString();
+        }
+        public void loadDataFromSaveString(string saveString)
+        {
+            string[] tokens = saveString.Split(new char[] { '\t' });
+            m_name = tokens[0];
+            try { m_initBAC = double.Parse(tokens[1]); } catch (Exception) { }
+            try { m_height = double.Parse(tokens[2]); } catch (Exception) { }
+            try { m_weight = double.Parse(tokens[3]); } catch (Exception) { }
+            try { m_hoursSinceEaten = double.Parse(tokens[4]); } catch (Exception) { }
+            try { m_playerAddedTime = DateTime.Parse(tokens[5]); } catch (Exception) { }
+            string filename = tokens[6];
+            if (System.IO.File.Exists(filename))
+                m_image = Image.FromFile(filename);
         }
     }
 }

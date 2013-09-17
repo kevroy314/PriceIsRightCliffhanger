@@ -87,35 +87,52 @@ namespace PriceIsRightParty
                 for (int i = 0; i < logItems.Length; i++)
                 {
                     string[] itemSplit = logItems[i].Split(new char[] { '\t' });
-                    string name = itemSplit[0];
-                    DateTime dt = DateTime.Parse(itemSplit[1]);
-                    double val = 0;
-                    Player p = new Player(name);
+                    string action = itemSplit[0];
+                    string name;
+                    DateTime dt;
+                    Player p;
                     try
                     {
-                        val = double.Parse(itemSplit[2]);
+                        switch (action)
+                        {
+                            case "PointAdded":
+                                name = itemSplit[1];
+                                dt = DateTime.Parse(itemSplit[2]);
+                                double val = double.Parse(itemSplit[3]);
+                                int found = -1;
+                                for (int j = 0; j < chart.Series.Count; j++)
+                                    if (chart.Series[j].Name == name)
+                                        found = j;
+                                if (found == -1)
+                                {
+                                    p = new Player(name);
+                                    p.InitBAC = val;
+                                    addNewPlayer(p, false);
+                                }
+                                else
+                                {
+                                    addDataToPlayer(name, dt, val, false);
+                                }
+                                break;
+                            case "PlayerAdded":
+                                p = new Player(itemSplit[1]);
+                                p.loadDataFromSaveString(logItems[i].Substring(12).Trim());
+                                addNewPlayer(p, false);
+                                break;
+                            case "PlayerRemoved":
+                                name = itemSplit[1];
+                                dt = DateTime.Parse(itemSplit[2]);
+                                removePlayer(name, dt, false);
+                                break;
+                            default:
+                                continue;
+                        }
                     }
-                    catch (Exception) { }
-                    bool removed = itemSplit[2] == "Removed";
-                    int found = -1;
-
-                    for (int j = 0; j < chart.Series.Count; j++)
-                        if (chart.Series[j].Name == name)
-                            found = j;
-                    if (found == -1)
-                    {
-                        p.InitBAC = val;
-                        addNewPlayer(p, dt, false);
-                    }
-                    else
-                    {
-                        if (removed)
-                            removePlayer(name, dt, false);
-                        else
-                            addDataToPlayer(name, dt, val, false);
-                    }
+                    catch (Exception) { continue; }
                 }
+
                 playerSelectComboBox.SelectedIndex = 0;
+                
                 reader.Close();
             }
             else
@@ -198,7 +215,7 @@ namespace PriceIsRightParty
 
         #region State Helper Functions
 
-        private void addNewPlayer(Player p, DateTime currentTime, bool save)
+        private void addNewPlayer(Player p, bool save)
         {
             playerSelectComboBox.Items.Add(p);
             newPlayerNameTextBox.Text = "";
@@ -211,7 +228,11 @@ namespace PriceIsRightParty
                 chart.Series[chart.Series.Count - 1].YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.Double;
                 chart.Series[chart.Series.Count - 1].XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.DateTime;
             }
-            addDataToPlayer(p.Name, currentTime, p.InitBAC, save);
+            if (save)
+            {
+                saveNewPlayerData(p);
+            }
+            addDataToPlayer(p.Name, p.PlayerAddedTime, p.InitBAC, save);
         }
 
         private void addDataToPlayer(string name, DateTime currentTime, double BAC, bool save)
@@ -270,6 +291,12 @@ namespace PriceIsRightParty
             chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count - 1].MarkerSize = chart.Series[playerIndex].Points[chart.Series[playerIndex].Points.Count - 1].MarkerSize * 2;
             if(save)
                 savePlayerRemoval(name, time);
+            for(int i = 0; i < playerSelectComboBox.Items.Count;i++)
+                if (((Player)playerSelectComboBox.Items[i]).Name == name)
+                {
+                    playerSelectComboBox.Items.RemoveAt(i);
+                    break;
+                }
         }
 
         #endregion
@@ -372,7 +399,8 @@ namespace PriceIsRightParty
                     p.HoursSinceEaten = (double)lastEatenNumeric.Value;
                     p.Image = captureImage();
                     p.BAC = p.InitBAC;
-                    addNewPlayer(p,time,true);
+                    p.PlayerAddedTime = time;
+                    addNewPlayer(p,true);
                     if (playerSelectComboBox.Items.Count == 1)
                         playerSelectComboBox.SelectedIndex = 0;
                 }
@@ -513,17 +541,25 @@ namespace PriceIsRightParty
 
         #region Save Function
 
+        private void saveNewPlayerData(Player p)
+        {
+            string saveString = p.toSaveString(true);
+            StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
+            w.Write("PlayerAdded\t" + saveString + "\r\n");
+            w.Close();
+        }
+
         private void savePoint(string playerName, DateTime t, double x)
         {
             StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
-            w.Write(playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + '\t' + x.ToString() + "\r\n");
+            w.Write("PointAdded\t" + playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + '\t' + x.ToString() + "\r\n");
             w.Close();
         }
 
         private void savePlayerRemoval(string playerName, DateTime t)
         {
             StreamWriter w = new StreamWriter(Properties.Settings.Default.LogFilename, true);
-            w.Write(playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + "\tRemoved\r\n");
+            w.Write("PlayerRemoved\t" + playerName + '\t' + t.ToLongDateString() + ' ' + t.ToLongTimeString() + "\r\n");
             w.Close();
         }
 
