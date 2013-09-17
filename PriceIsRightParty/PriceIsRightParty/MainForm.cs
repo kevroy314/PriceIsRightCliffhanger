@@ -130,8 +130,8 @@ namespace PriceIsRightParty
                     }
                     catch (Exception) { continue; }
                 }
-
-                playerSelectComboBox.SelectedIndex = 0;
+                if (playerSelectComboBox.Items.Count > 0)
+                    playerSelectComboBox.SelectedIndex = 0; 
                 
                 reader.Close();
             }
@@ -231,6 +231,7 @@ namespace PriceIsRightParty
             if (save)
             {
                 saveNewPlayerData(p);
+                reactivateCamera();
             }
             addDataToPlayer(p.Name, p.PlayerAddedTime, p.InitBAC, save);
         }
@@ -251,7 +252,6 @@ namespace PriceIsRightParty
                     advanceScreenState();
                     climberPictureBox.Image = null;
                 }
-                reactivateCamera();
             }
         }
 
